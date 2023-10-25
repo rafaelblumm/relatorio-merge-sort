@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 RESOURCES = pathlib.Path(__file__).parent.parent / "resources"
 
-def generateSample(qnt):
+def generate_sample_int(qnt):
     lst = np.random.rand(qnt).tolist()
     for i in range(0, len(lst)):
         lst[i] = str(int(lst[i] * pow(10, 13)))
@@ -26,7 +26,7 @@ def generateSample(qnt):
     with (RESOURCES / f"random-order-{qnt}.txt").open("w") as f:
         f.write("\n".join(lst))
 
-def merge(arr, l, m, r):
+def _merge(arr, l, m, r):
     n1 = m - l + 1
     n2 = r - m
     L = [0] * (n1)
@@ -61,15 +61,15 @@ def merge(arr, l, m, r):
         j += 1
         k += 1
 
-def mergeSort(arr, l, r):
+def __merge_sort(arr, l, r):
     if l < r:
         m = l + (r-l)//2
 
-        mergeSort(arr, l, m)
-        mergeSort(arr, m+1, r)
-        merge(arr, l, m, r)
+        __merge_sort(arr, l, m)
+        __merge_sort(arr, m+1, r)
+        _merge(arr, l, m, r)
 
-def listFromFile(filename, isNumericVal):
+def _list_from_file(filename, isNumericVal):
     with open(RESOURCES / filename, "r") as f:
         lst = f.readlines()
     if isNumericVal:
@@ -77,16 +77,23 @@ def listFromFile(filename, isNumericVal):
             lst[i] = int(lst[i])
     return lst
 
+def get_data_filenames(name):
+    return [
+        f"ascending-order-{name}.txt",
+        f"random-order-{name}.txt",
+        f"descending-order-{name}.txt"
+    ]
+
 def _benchmark(lst):
     start = time.perf_counter()
-    mergeSort(lst, 0, len(lst) - 1)
+    __merge_sort(lst, 0, len(lst) - 1)
     end = time.perf_counter()
     return _truncate_float(end - start)
 
-def benchmarkMergeSort(files, isNumericVal=False):
+def benchmark_merge_sort(name, isNumericVal=False):
     res = []
-    for f in files:
-        res.append(_benchmark(listFromFile(f, isNumericVal)))
+    for f in get_data_filenames(name):
+        res.append(_benchmark(_list_from_file(f, isNumericVal)))
     return tuple(res)
 
 def _truncate_float(num):
@@ -115,7 +122,7 @@ def plot(benchmarks):
         multiplier += 1
 
     ax.set_ylabel('Tempo (segundos)')
-    ax.set_title('Benchmark merge-sort (int)')
+    ax.set_title('Benchmark _merge-sort (int)')
     ax.set_xticks(x + width, sortOrder)
     ax.legend(loc='upper left', ncols=3)
     h = _calculate_plot_height(benchmarks)
