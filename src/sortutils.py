@@ -6,25 +6,35 @@ import matplotlib.pyplot as plt
 
 RESOURCES = pathlib.Path(__file__).parent.parent / "resources"
 
-def generate_sample_int(qnt):
-    lst = np.random.rand(qnt).tolist()
-    for i in range(0, len(lst)):
-        lst[i] = str(int(lst[i] * pow(10, 13)))
-    lst = np.unique(lst).tolist()
-
+def _generate_sample(lst, file_suffix):
     # Ordem crescente
-    with (RESOURCES / f"ascending-order-{qnt}.txt").open("w") as f:
-        f.write(str("\n".join(lst)))
+    lst.sort()
+    with (RESOURCES / f"ascending-order-{file_suffix}.txt").open("w") as f:
+        f.writelines(lst)
 
     # Ordem decrescente
     lst.reverse()
-    with (RESOURCES / f"descending-order-{qnt}.txt").open("w") as f:
-        f.write("\n".join(lst))
+    with (RESOURCES / f"descending-order-{file_suffix}.txt").open("w") as f:
+        f.writelines(lst)
 
     # Ordem aleatória
     random.shuffle(lst)
-    with (RESOURCES / f"random-order-{qnt}.txt").open("w") as f:
-        f.write("\n".join(lst))
+    with (RESOURCES / f"random-order-{file_suffix}.txt").open("w") as f:
+        f.writelines(lst)
+
+def generate_sample_int(qnt):
+    ''' Gera amostras de dados aleatórios numéricos.
+    '''
+    lst = []
+    for i in np.random.rand(qnt).tolist():
+        lst.append(f"{(int(i * pow(10, 13)))}\n")
+    _generate_sample(np.unique(lst).tolist(), qnt)
+
+def generate_sample_str(file_suffix):
+    ''' Gera amostras de dados a partir de dicionário de palavras.
+    '''
+    with (RESOURCES / f"ascending-order-{file_suffix}.txt").open("r") as f:
+        _generate_sample(f.readlines(), file_suffix)
 
 def _merge(arr, l, m, r):
     n1 = m - l + 1
@@ -69,10 +79,10 @@ def __merge_sort(arr, l, r):
         __merge_sort(arr, m+1, r)
         _merge(arr, l, m, r)
 
-def _list_from_file(filename, isNumericVal):
+def _list_from_file(filename, is_numeric_val):
     with open(RESOURCES / filename, "r") as f:
         lst = f.readlines()
-    if isNumericVal:
+    if is_numeric_val:
         for i in range(0, len(lst)):
             lst[i] = int(lst[i])
     return lst
@@ -90,10 +100,10 @@ def _benchmark(lst):
     end = time.perf_counter()
     return _truncate_float(end - start)
 
-def benchmark_merge_sort(name, isNumericVal=False):
+def benchmark_merge_sort(name, is_numeric_val=False):
     res = []
     for f in get_data_filenames(name):
-        res.append(_benchmark(_list_from_file(f, isNumericVal)))
+        res.append(_benchmark(_list_from_file(f, is_numeric_val)))
     return tuple(res)
 
 def _truncate_float(num):
@@ -106,10 +116,10 @@ def _calculate_plot_height(benchmarks):
         arr.extend(list(v))
     return max(arr)
 
-def plot(benchmarks):
-    sortOrder = ("Crescente", "Aleatório", "Decrescente")
+def plot(benchmarks, title_suffix):
+    sort_order = ("Crescente", "Aleatório", "Decrescente")
 
-    x = np.arange(len(sortOrder))
+    x = np.arange(len(sort_order))
     width = 0.25
     multiplier = 0
 
@@ -122,8 +132,8 @@ def plot(benchmarks):
         multiplier += 1
 
     ax.set_ylabel('Tempo (segundos)')
-    ax.set_title('Benchmark _merge-sort (int)')
-    ax.set_xticks(x + width, sortOrder)
+    ax.set_title(f"Benchmark merge-sort ({title_suffix})")
+    ax.set_xticks(x + width, sort_order)
     ax.legend(loc='upper left', ncols=3)
     h = _calculate_plot_height(benchmarks)
     ax.set_ylim(0, h + 0.2 * h)
