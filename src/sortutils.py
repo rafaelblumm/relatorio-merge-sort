@@ -2,32 +2,33 @@ import time
 import random
 import pathlib
 import numpy as np
-from numpy.random import MT19937
-from numpy.random import RandomState, SeedSequence
 import matplotlib.pyplot as plt
 
 RESOURCES = pathlib.Path(__file__).parent.parent / "resources"
+RESOURCES_TMP = RESOURCES / "tmp"
 
-def _generate_sample(lst, file_suffix, is_sorted=False):
+def _generate_sample(lst, file_suffix, is_numeric=False):
     '''
     Gera e grava amostras de dados em ordens crescente, decrescente e aleatória.
     :param lst: Lista de dados.
     :param file_suffix: Sufixo do arquivo de dados.
     '''
     # Ordem crescente
-    if not is_sorted:
+    res = RESOURCES_TMP
+    if not is_numeric:
+        res = RESOURCES
         lst.sort()
-    with (RESOURCES / f"ascending-order-{file_suffix}.txt").open("w") as f:
+    with (res / f"ascending-order-{file_suffix}.txt").open("w") as f:
         f.writelines(lst)
 
     # Ordem decrescente
     lst.reverse()
-    with (RESOURCES / f"descending-order-{file_suffix}.txt").open("w") as f:
+    with (RESOURCES_TMP / f"descending-order-{file_suffix}.txt").open("w") as f:
         f.writelines(lst)
 
     # Ordem aleatória
     random.Random(7).shuffle(lst)
-    with (RESOURCES / f"random-order-{file_suffix}.txt").open("w") as f:
+    with (RESOURCES_TMP / f"random-order-{file_suffix}.txt").open("w") as f:
         f.writelines(lst)
 
 def generate_sample_int(qnt):
@@ -38,7 +39,7 @@ def generate_sample_int(qnt):
     lst = []
     for i in range(1, qnt + 1):
         lst.append(f"{i}\n")
-    _generate_sample(lst, qnt, is_sorted=True)
+    _generate_sample(lst, qnt, is_numeric=True)
 
 def generate_sample_str(file_suffix):
     '''
