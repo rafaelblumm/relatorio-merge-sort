@@ -1,3 +1,4 @@
+import os
 import time
 import random
 import pathlib
@@ -105,7 +106,10 @@ def _list_from_file(filename, is_numeric_val):
     :param is_numeric_val: Se o conjunto de dados é numérico.
     :return list[str]
     '''
-    with open(RESOURCES / filename, "r") as f:
+    res = RESOURCES
+    if os.path.exists(RESOURCES_TMP / filename):
+        res = RESOURCES_TMP
+    with open(res / filename, "r") as f:
         lst = f.readlines()
     return [int(i) for i in lst] if is_numeric_val else lst
 
