@@ -2,18 +2,21 @@ import time
 import random
 import pathlib
 import numpy as np
+from numpy.random import MT19937
+from numpy.random import RandomState, SeedSequence
 import matplotlib.pyplot as plt
 
 RESOURCES = pathlib.Path(__file__).parent.parent / "resources"
 
-def _generate_sample(lst, file_suffix):
+def _generate_sample(lst, file_suffix, is_sorted=False):
     '''
     Gera e grava amostras de dados em ordens crescente, decrescente e aleatória.
     :param lst: Lista de dados.
     :param file_suffix: Sufixo do arquivo de dados.
     '''
     # Ordem crescente
-    lst.sort()
+    if not is_sorted:
+        lst.sort()
     with (RESOURCES / f"ascending-order-{file_suffix}.txt").open("w") as f:
         f.writelines(lst)
 
@@ -23,19 +26,19 @@ def _generate_sample(lst, file_suffix):
         f.writelines(lst)
 
     # Ordem aleatória
-    random.shuffle(lst)
+    random.Random(7).shuffle(lst)
     with (RESOURCES / f"random-order-{file_suffix}.txt").open("w") as f:
         f.writelines(lst)
 
 def generate_sample_int(qnt):
     '''
-    Gera amostras de dados numéricos aleatórios.
+    Gera amostras de dados numéricos.
     :param qnt: Tamanho do conjunto de dados.
     '''
     lst = []
-    for i in np.random.rand(qnt).tolist():
-        lst.append(f"{(int(i * pow(10, 13)))}\n")
-    _generate_sample(np.unique(lst).tolist(), qnt)
+    for i in range(1, qnt + 1):
+        lst.append(f"{i}\n")
+    _generate_sample(lst, qnt, is_sorted=True)
 
 def generate_sample_str(file_suffix):
     '''
@@ -45,61 +48,54 @@ def generate_sample_str(file_suffix):
     with (RESOURCES / f"ascending-order-{file_suffix}.txt").open("r") as f:
         _generate_sample(f.readlines(), file_suffix)
 
-def _merge(lst, l, m, r):
+def _merge(a, aux, lo, mid, hi):
     '''
-    Método auxiliar do algoritmo de ordenação merge-sort.
-    :param lst: Conjunto de dados.
-    :param l: Posição a esquerda da lista.
-    :param m: Posição central da lista.
-    :param r: Posição a direita da lista.
+    Método auxiliar do algoritmo de ordenação merge-sort. Retorna quantidade
+    de trocas realizadas para a ordenação
+    :param a: Array a ser ordenado.
+    :param lo: Posição a esquerda da lista.
+    :param mid: Posição central da lista.
+    :param hi: Posição a direita da lista.
+    :return int
     '''
-    n1 = m - l + 1
-    n2 = r - m
-    L = [0] * (n1)
-    R = [0] * (n2)
-
-    for i in range(0, n1):
-        L[i] = lst[l + i]
-
-    for j in range(0, n2):
-        R[j] = lst[m + 1 + j]
-
-    i = 0
-    j = 0
-    k = l
-
-    while i < n1 and j < n2:
-        if L[i] <= R[j]:
-            lst[k] = L[i]
-            i += 1
-        else:
-            lst[k] = R[j]
+    iter = 0
+    for k in range(lo, hi + 1):
+        aux[k] = a[k]
+    i = lo
+    j = mid + 1
+    for k in range(lo, hi + 1):
+        if i > mid:
+            a[k] = aux[j]
             j += 1
-        k += 1
+        elif j > hi:
+            a[k] = aux[i]
+            i += 1
+        elif aux[j] < aux[i]:
+            a[k] = aux[j]
+            j += 1
+            iter += 1
+        else:
+            a[k] = aux[i]
+            i += 1
+    return iter
 
-    while i < n1:
-        lst[k] = L[i]
-        i += 1
-        k += 1
-
-    while j < n2:
-        lst[k] = R[j]
-        j += 1
-        k += 1
-
-def _merge_sort(lst, l, r):
+def _merge_sort(a, aux, lo, hi):
     '''
-    Ordena lista de dados utilizando o algoritmo merge-sort.
-    :param lst: Conjunto de dados.
-    :param l: Posição a esquerda da lista.
-    :param r: Posição a direita da lista.
+    Ordena lista de dados utilizando o algoritmo merge-sort, retornando
+    quantidade de trocas realizadas para a ordenação
+    :param a: Conjunto de dados.
+    :param lo: Posição a esquerda da lista.
+    :param hi: Posição a direita da lista.
+    :return int
     '''
-    if l < r:
-        m = l + (r-l) // 2
-
-        _merge_sort(lst, l, m)
-        _merge_sort(lst, m + 1, r)
-        _merge(lst, l, m, r)
+    iter = 0
+    if hi <= lo:
+        return iter
+    mid = lo + (hi - lo) // 2
+    iter += _merge_sort(a, aux, lo, mid)
+    iter += _merge_sort(a, aux, mid + 1, hi)
+    iter += _merge(a, aux, lo, mid, hi)
+    return iter
 
 def _list_from_file(filename, is_numeric_val):
     '''
@@ -110,10 +106,7 @@ def _list_from_file(filename, is_numeric_val):
     '''
     with open(RESOURCES / filename, "r") as f:
         lst = f.readlines()
-    if is_numeric_val:
-        for i in range(0, len(lst)):
-            lst[i] = int(lst[i])
-    return lst
+    return [int(i) for i in lst] if is_numeric_val else lst
 
 def _get_data_filenames(file_suffix):
     '''
@@ -132,24 +125,26 @@ def _benchmark(lst):
     Avalia o desempenho do algoritmo merge-sort em segundos.
     Obs.: truncado em 3 casas decimais.
     :param lst: Conjunto de dados.
-    :return float
+    :return tuple(float, int)
     '''
     start = time.perf_counter()
-    _merge_sort(lst, 0, len(lst) - 1)
+    iter = _merge_sort(lst, [0] * len(lst), 0, len(lst) - 1)
     end = time.perf_counter()
-    return _truncate_float(end - start)
+    return (_truncate_float(end - start), iter)
 
-def benchmark_merge_sort(file_suffix, is_numeric_val=False):
+def benchmark_merge_sort(file_suffix, is_numeric_val=True):
     '''
     Avalia o desempenho do algoritmo merge-sort em diversos conjuntos de dados.
     :param file_suffix: Sufixo do arquivo de dados.
     :param is_numeric_val: Se o conjunto de dados é numérico.
     :return tuple(float, float, float)
     '''
-    res = []
+    res = [[], []]
     for f in _get_data_filenames(file_suffix):
-        res.append(_benchmark(_list_from_file(f, is_numeric_val)))
-    return tuple(res)
+        bm = _benchmark(_list_from_file(f, is_numeric_val))
+        res[0].append(bm[0])
+        res[1].append(bm[1])
+    return [tuple(res[0]), tuple(res[1])]
 
 def _truncate_float(num):
     '''
@@ -171,11 +166,29 @@ def _calculate_plot_height(benchmarks):
         arr.extend(list(v))
     return max(arr)
 
-def plot(benchmarks, title_suffix):
+def process_bm_data(bm, labels):
+    '''
+    Processa dados de benchmark para plotagem.
+    :param bm: Resultados dos benchmarks.
+    :param labels: Labels dos dados.
+    :return list[dict]
+    '''
+    a = []
+    for i in range(0, 2):
+        aux = {
+            labels[0]: bm[0][i],
+            labels[1]: bm[1][i],
+            labels[2]: bm[2][i]
+        }
+        a.append(aux)
+    return a
+
+def _plot(benchmarks, title_suffix, y_label):
     '''
     Exibe gráfico de benchmarks.
     :param benchmarks: Resultados dos benchmarks.
     :param title_suffix: Informações adicionais do título.
+    :param y_label: Label do eixo Y
     '''
     sort_order = ("Crescente", "Aleatório", "Decrescente")
 
@@ -191,7 +204,7 @@ def plot(benchmarks, title_suffix):
         ax.bar_label(rects, padding=3)
         multiplier += 1
 
-    ax.set_ylabel('Tempo (segundos)')
+    ax.set_ylabel(y_label)
     ax.set_title(f"Benchmark merge-sort ({title_suffix})")
     ax.set_xticks(x + width, sort_order)
     ax.legend(loc='upper left', ncols=3)
@@ -199,3 +212,20 @@ def plot(benchmarks, title_suffix):
     ax.set_ylim(0, h + 0.2 * h)
     
     plt.show()
+
+
+def plot_time(benchmarks, title_suffix):
+    '''
+    Exibe gráfico de benchmarks de tempo de execução.
+    :param benchmarks: Resultados dos benchmarks.
+    :param title_suffix: Informações adicionais do título.
+    '''
+    _plot(benchmarks, title_suffix, "Tempo (segundos)")
+
+def plot_switch(benchmarks, title_suffix):
+    '''
+    Exibe gráfico de benchmarks de trocas para ordenação.
+    :param benchmarks: Resultados dos benchmarks.
+    :param title_suffix: Informações adicionais do título.
+    '''
+    _plot(benchmarks, title_suffix, "Trocas")
