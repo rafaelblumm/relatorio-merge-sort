@@ -1,9 +1,17 @@
-# relatorio-merge-sort
+# Relatório Merge-Sort
 
-Palavras em pt-br: <https://www.ime.usp.br/~pf/dicios/>
+Trabalho desenvolvido para a disciplina Estruturas Avançadas de dados I, por Enzo Porto e Rafael Blumm.
 
-Palavras em inglês: <https://github.com/dwyl/english-words>
+## Referências
 
-Pokédex: <https://pokemondb.net/tools/text-list>
+### Conjuntos de dados
 
-Algoritmo merge-sort: <https://sedgewick.io/wp-content/uploads/2022/04/Algs05-Mergesort.pdf>
+- Palavras em pt-br: <https://www.ime.usp.br/~pf/dicios/>
+
+- Palavras em inglês: <https://github.com/dwyl/english-words>
+
+- Pokédex: <https://pokemondb.net/tools/text-list>
+
+### Desenvolvimento
+
+- Algoritmo Merge-Sort: <https://sedgewick.io/wp-content/uploads/2022/04/Algs05-Mergesort.pdf>
